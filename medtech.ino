@@ -670,7 +670,8 @@ float         last_z_angle;
 float         last_gyro_x_angle;  // Store the gyro angles to compare drift
 float         last_gyro_y_angle;
 float         last_gyro_z_angle;
-int           counter;
+float         last_time_change;
+float         last_position;
 
 void set_last_read_angle_data(unsigned long time, float x, float y, float z, float x_gyro, float y_gyro, float z_gyro) {
   last_read_time = time;
@@ -699,6 +700,8 @@ float    base_z_accel;
 float    base_x_gyro;
 float    base_y_gyro;
 float    base_z_gyro;
+unsigned long StartTime = millis();
+
 
 
 int read_gyro_accel_vals(uint8_t* accel_t_gyro_ptr) {
@@ -775,8 +778,13 @@ void calibrate_sensors() {
   base_z_gyro = z_gyro;
   
   //Serial.println("Finishing Calibration");
-}
 
+  
+}
+  int LED=13;
+  long startTime=millis();
+  double Dur=0;
+  double DurMax=5000;//5s
 
 void setup()
 {      
@@ -827,16 +835,19 @@ void setup()
   //Initialize the angles
   calibrate_sensors();  
   set_last_read_angle_data(millis(), 0, 0, 0, 0, 0, 0);
-  int counter = 0;
+  last_position = 0;
+  last_time_change = millis();
+  //LED output
+  pinMode(LED,OUTPUT);
 }
 
 
 void loop()
-{
-  counter += 1;
-  
+{  
   int error;
   double dT;
+  float time_elapsed;
+  int new_position;
   accel_t_gyro_union accel_t_gyro;
 
   /*
@@ -849,6 +860,10 @@ void loop()
   
   // Get the time of reading for rotation computations
   unsigned long t_now = millis();
+
+  // We are computing the time elapsed since the last movement.
+  time_elapsed = t_now - last_time_change;
+
    
 /*
   Serial.print(F("Read accel, temp and gyro, error = "));
@@ -974,7 +989,40 @@ void loop()
  
  
 // OdisHarkinsvisualiser format
-  Serial.print(counter, 2);
+
+  if (time_elapsed > 1000)
+  {
+    // We need to turn on the light
+    // if light off:
+    //    turn it on
+  }
+
+  // We need to classify the position into different states.
+  if (angle_x < -50)
+  {
+    new_position = 0;
+  }
+  else if (angle_x < 50)
+  {
+    new_position = 1;
+  }
+  else if (angle_x < 100)
+  {
+    new_position = 2;
+  }
+
+  Dur=millis()-startTime;
+  if (not(last_position == new_position))
+  {
+    last_time_change = millis();
+    digitalWrite(LED,LOW);
+    last_position = new_position;
+    startTime=millis();
+  }
+  else if (Dur>=DurMax){
+    digitalWrite(LED,HIGH);
+  }
+  
  
   Serial.print(accel_angle_x, 2);
   Serial.print(F(","));
@@ -1139,5 +1187,4 @@ int MPU6050_write_reg(int reg, uint8_t data)
 
   return (error);
 }
-
 
