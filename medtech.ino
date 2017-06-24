@@ -1187,4 +1187,3 @@ int MPU6050_write_reg(int reg, uint8_t data)
 
   return (error);
 }
-
